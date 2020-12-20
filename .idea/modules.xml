@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/reordeable_collection.iml" filepath="$PROJECT_DIR$/reordeable_collection.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/reordeable_collection_android.iml" filepath="$PROJECT_DIR$/android/reordeable_collection_android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/example/android/reordeable_collection_example_android.iml" filepath="$PROJECT_DIR$/example/android/reordeable_collection_example_android.iml" />
+    </modules>
+  </component>
+</project>
