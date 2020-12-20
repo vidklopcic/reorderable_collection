@@ -2,7 +2,7 @@
   <library name="Flutter Plugins" type="FlutterPluginsLibraryType">
     <CLASSES>
       <root url="file://$PROJECT_DIR$" />
-      <root url="file://$USER_HOME$/.pub-cache/git/gm5_utils-01230ae741cbf8bbba994370eb7e677809a88ed4" />
+      <root url="file://$USER_HOME$/.pub-cache/git/gm5_utils-005c794c07b5ddef20b237cffe3ced8859d2d369" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

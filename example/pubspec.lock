@@ -152,7 +152,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "01230ae741cbf8bbba994370eb7e677809a88ed4"
+      resolved-ref: "005c794c07b5ddef20b237cffe3ced8859d2d369"
       url: "git@github.com:vidklopcic/gm5_utils.git"
     source: git
     version: "0.0.1"

@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:reordeable_collection/reordeable_collection.dart';
+import 'package:gm5_utils/extended_functionality/collections.dart';
 
 void main() {
   runApp(MyApp());
@@ -31,7 +32,10 @@ class _MyAppState extends State<MyApp> {
         ),
         body: ReordeableCollectionController(
           itemBuilder: (context, key, dragDetector, index) => dragDetector(ListTile(
-            title: Text(_sortableItems[index], key: key,),
+            title: Text(
+              _sortableItems[index],
+              key: key,
+            ),
           )),
           collectionBuilder: (context, key, itemBuilder, scrollController) => ListView.builder(
             key: key,
@@ -39,6 +43,7 @@ class _MyAppState extends State<MyApp> {
             itemCount: _sortableItems.length,
             itemBuilder: itemBuilder,
           ),
+          onReorder: _sortableItems.move,
         ),
       ),
     );

@@ -9,6 +9,7 @@ typedef ReordeableCollectionItemBuilder<T> = Widget Function(
 typedef ReordeableCollectionItemBuilderWrapper<T> = Widget Function(BuildContext context, int index);
 typedef ReordeableCollectionBuilder<T> = Widget Function(BuildContext context, Key key,
     ReordeableCollectionItemBuilderWrapper<T> itemBuilder, ScrollController scrollController);
+typedef ReorderableCollectionOnReorder = void Function(int from, int to);
 
 enum ReordeableCollectionReorderType { swap, reorder }
 
@@ -18,14 +19,18 @@ class ReordeableCollectionController<T> extends StatefulWidget {
   final ReordeableCollectionReorderType reorderType;
   final Duration duration;
   final Curve curve;
+  final Axis limitToAxis;
+  final ReorderableCollectionOnReorder onReorder;
 
   const ReordeableCollectionController({
     Key key,
     @required this.collectionBuilder,
     @required this.itemBuilder,
+    @required this.onReorder,
     this.duration = const Duration(milliseconds: 300),
     this.curve = Curves.easeInOutExpo,
     this.reorderType = ReordeableCollectionReorderType.reorder,
+    this.limitToAxis = Axis.vertical,
   }) : super(key: key);
 
   @override
@@ -34,41 +39,32 @@ class ReordeableCollectionController<T> extends StatefulWidget {
 
 class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionController<T>>
     with SingleTickerProviderStateMixin {
-  Map<int, Rect> _intialBounds = {};
-  Map<int, Rect> _futureBounds = {};
+  Map<int, Rect> _initalBounds = {};
+  Map<int, Offset> _targetOffsets = {};
   Map<int, Offset> _currentOffsets = {};
   ReordeableCollectionItemBuilderWrapper<T> currentBuilderWrapper;
   ReordeableCollectionItemBuilderWrapper<T> futureBuilderWrapper;
-  _ElementKeys futureKeys = _ElementKeys();
   _ElementKeys currentKeys = _ElementKeys();
   int _from;
   int _to;
-  bool _dragging = false;
   AnimationController _rearrangeAnimationController;
   Animation<double> _rearrangeAnimation;
   Offset _dragOffset = Offset.zero;
   GlobalKey _currentTree = GlobalKey();
-  GlobalKey _futureTree = GlobalKey();
-  LinkedScrollControllerGroup _scrollSync = LinkedScrollControllerGroup();
-  ScrollController _currentScrollController;
-  ScrollController _futureScrollController;
+  ScrollController _currentScrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Opacity(
-          opacity: 0.1,
-          child: widget.collectionBuilder(context, _futureTree, futureBuilderWrapper, _futureScrollController),
-        ),
         widget.collectionBuilder(context, _currentTree, currentBuilderWrapper, _currentScrollController),
       ],
     );
   }
 
   Offset _calcTransitionOffset(int index) {
-    Offset oTo = _futureBounds[index]?.center;
-    Offset oFrom = _intialBounds[index]?.center;
+    Offset oTo = _targetOffsets[index];
+    Offset oFrom = _initalBounds[index]?.center;
     Offset oCurr = _currentOffsets[index] ?? Offset.zero;
     if (oTo == null || oFrom == null) {
       oTo = Offset.zero;
@@ -81,8 +77,6 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   @override
   void initState() {
     super.initState();
-    _currentScrollController = _scrollSync.addAndGet();
-    _futureScrollController = _scrollSync.addAndGet();
     _rearrangeAnimationController = AnimationController(vsync: this, duration: widget.duration);
     _rearrangeAnimation = CurvedAnimation(parent: _rearrangeAnimationController, curve: widget.curve);
 
@@ -111,46 +105,45 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
             );
           },
         );
+  }
 
-    futureBuilderWrapper = (context, index) {
-      if (_from == null || _to == null)
-        return widget.itemBuilder(context, futureKeys.keyForIndex(index), (c) => c, index);
-      if (widget.reorderType == ReordeableCollectionReorderType.swap) {
-        if (index == _from)
-          index = _to;
-        else if (index == _to) index = _from;
-      } else {
-        if (index == _to) {
-          index = _from;
-        } else if (index >= _from && index < _to)
-          index += 1;
-        else if (index <= _from && index >= _to) index -= 1;
+  int toFutureIndex(int index) {
+    int oi = index;
+    if (_from == null || _to == null) return index;
+    if (widget.reorderType == ReordeableCollectionReorderType.swap) {
+      if (index == _from)
+        index = _to;
+      else if (index == _to) index = _from;
+    } else {
+      if (index > _from && index <= _to) {
+        index -= 1;
+      } else if (index < _from && index >= _to) {
+        index += 1;
       }
-      return widget.itemBuilder(context, futureKeys.keyForIndex(index), (c) => c, index);
-    };
+    }
+    return index;
   }
 
   ReordeableCollectionGestureDetectorBuilder _gestureDetector(GlobalKey key, int index) {
     return (Widget child) => GestureDetector(
           onPanStart: (details) {
-            _updateBounds(initial: true);
+            _updateBounds();
             setState(() {
               _from = index;
-              _dragging = true;
               _dragOffset = Offset.zero;
             });
           },
           onPanUpdate: (details) {
             setState(() {
-              _dragOffset += details.delta;
+              _dragOffset += details.delta.scale(
+                widget.limitToAxis == Axis.vertical ? 0 : 1,
+                widget.limitToAxis == Axis.horizontal ? 0 : 1,
+              );
             });
-            gm5Utils.eventUtils.throttle(300, _updateHitObject, arguments: [key]);
+            gm5Utils.eventUtils.throttle(widget.duration.inMilliseconds, _updateHitObject, arguments: [key]);
           },
           onPanEnd: (details) {
-            setState(() {
-              print('ended drag');
-              _dragging = false;
-            });
+            _endDrag();
           },
           child: child,
         );
@@ -164,13 +157,12 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   }
 
   void _updateHitObject(GlobalKey draggingKey) {
-    if (!_dragging) return;
-    Offset renderCenter = _renderBoxToBounds(draggingKey.currentContext?.findRenderObject()).center;
+    Offset renderCenter = _renderBoxToBounds(draggingKey.currentContext?.findRenderObject())?.center;
     if (renderCenter == null) return;
     // this is very expensive, so we must throttle calls to this function
     // is there a better option to find the object beneath?
-    for (int index in _intialBounds.keys) {
-      if (_intialBounds[index].contains(renderCenter)) {
+    for (int index in _initalBounds.keys) {
+      if (_initalBounds[index].contains(renderCenter)) {
         _setToIndex(index);
         return;
       }
@@ -178,30 +170,46 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   }
 
   void _setToIndex(int to) {
-    setState(() {
-      _to = to;
-    });
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      for (int index in _intialBounds.keys) {
-        _currentOffsets[index] = _calcTransitionOffset(index);
-      }
-      _updateBounds();
-      _rearrangeAnimationController.forward(from: 0);
-    });
+    if (to == _to) return;
+    _to = to;
+    for (int index in _initalBounds.keys) {
+      _currentOffsets[index] = _calcTransitionOffset(index);
+    }
+    for (int index in _initalBounds.keys) {
+      int futureIndex = toFutureIndex(index);
+      _targetOffsets[index] = _initalBounds[futureIndex].center;
+    }
+    _rearrangeAnimationController.forward(from: 0);
   }
 
-  void _updateBounds({bool initial = false}) {
-    for (GlobalKey key in futureKeys.keys) {
-      RenderObject renderObject = key.currentContext?.findRenderObject();
-      if (renderObject == null || !renderObject.attached) continue;
-      _futureBounds[futureKeys.indexForKey(key)] = _renderBoxToBounds(renderObject);
-    }
-    if (!initial) return;
+  void _updateBounds() {
     for (GlobalKey key in currentKeys.keys) {
       RenderObject renderObject = key.currentContext?.findRenderObject();
       if (renderObject == null || !renderObject.attached) continue;
-      _intialBounds[currentKeys.indexForKey(key)] = _renderBoxToBounds(renderObject);
+      _initalBounds[currentKeys.indexForKey(key)] = _renderBoxToBounds(renderObject);
     }
+  }
+
+  void _endDrag() async {
+    for (int index in _initalBounds.keys) {
+      _currentOffsets[index] = _calcTransitionOffset(index);
+    }
+    if (_to == null) {
+      _to = _from;
+    }
+    _currentOffsets[_from] = _dragOffset;
+    _targetOffsets[_from] = _initalBounds[_to].center;
+    int from = _from;
+    _from = null;
+    await _rearrangeAnimationController.forward(from: 0);
+    widget.onReorder(from, _to);
+    setState(() {
+      _currentOffsets = {};
+      _to = null;
+      _currentOffsets = {};
+      _initalBounds = {};
+      _targetOffsets = {};
+    });
   }
 }
 
