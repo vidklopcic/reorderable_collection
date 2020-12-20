@@ -32,9 +32,9 @@ class _MyAppState extends State<MyApp> {
         ),
         body: ReordeableCollectionController(
           itemBuilder: (context, key, dragDetector, index) => dragDetector(ListTile(
+            key: key,
             title: Text(
               _sortableItems[index],
-              key: key,
             ),
           )),
           collectionBuilder: (context, key, itemBuilder, scrollController) => ListView.builder(
