@@ -37,7 +37,8 @@ class _MyAppState extends State<MyApp> {
               _sortableItems[index],
             ),
           )),
-          collectionBuilder: (context, key, itemBuilder, scrollController) => ListView.builder(
+          collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll) => ListView.builder(
+            physics: disableScroll ? NeverScrollableScrollPhysics() : null,
             key: key,
             controller: scrollController,
             itemCount: _sortableItems.length,

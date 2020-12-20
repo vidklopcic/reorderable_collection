@@ -8,7 +8,7 @@ typedef ReordeableCollectionItemBuilder<T> = Widget Function(
     BuildContext context, Key key, ReordeableCollectionGestureDetectorBuilder dragDetector, int index);
 typedef ReordeableCollectionItemBuilderWrapper<T> = Widget Function(BuildContext context, int index);
 typedef ReordeableCollectionBuilder<T> = Widget Function(BuildContext context, Key key,
-    ReordeableCollectionItemBuilderWrapper<T> itemBuilder, ScrollController scrollController);
+    ReordeableCollectionItemBuilderWrapper<T> itemBuilder, ScrollController scrollController, bool disableScrolling);
 typedef ReorderableCollectionOnReorder = void Function(int from, int to);
 
 enum ReordeableCollectionReorderType { swap, reorder }
@@ -52,11 +52,13 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   Offset _dragOffset = Offset.zero;
   GlobalKey _currentTree = GlobalKey();
   ScrollController _currentScrollController = ScrollController();
+  bool _disableScrolling = false;
   OverlayEntry _overlay;
 
   @override
   Widget build(BuildContext context) {
-    return widget.collectionBuilder(context, _currentTree, currentBuilderWrapper, _currentScrollController);
+    return widget.collectionBuilder(
+        context, _currentTree, currentBuilderWrapper, _currentScrollController, _disableScrolling);
   }
 
   Offset _calcTransitionOffset(int index) {
@@ -77,28 +79,29 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
     _rearrangeAnimationController = AnimationController(vsync: this, duration: widget.duration);
     _rearrangeAnimation = CurvedAnimation(parent: _rearrangeAnimationController, curve: widget.curve);
     currentBuilderWrapper = (context, index) => AnimatedBuilder(
-      animation: _rearrangeAnimation,
-      builder: (ctx, child) {
-        if (_from == index) return Transform.translate(
-          offset: Offset(double.infinity, 0),
-          child: widget.itemBuilder(
-            context,
-            currentKeys.keyForIndex(index),
-            _gestureDetector(currentKeys.keyForIndex(index), index),
-            index,
-          ),
+          animation: _rearrangeAnimation,
+          builder: (ctx, child) {
+            if (_from == index)
+              return Transform.translate(
+                offset: Offset(MediaQuery.of(context).size.width * 2, 0),
+                child: widget.itemBuilder(
+                  context,
+                  currentKeys.keyForIndex(index),
+                  _gestureDetector(currentKeys.keyForIndex(index), index),
+                  index,
+                ),
+              );
+            return Transform.translate(
+              offset: _calcTransitionOffset(index),
+              child: widget.itemBuilder(
+                context,
+                currentKeys.keyForIndex(index),
+                _gestureDetector(currentKeys.keyForIndex(index), index),
+                index,
+              ),
+            );
+          },
         );
-        return Transform.translate(
-          offset: _calcTransitionOffset(index),
-          child: widget.itemBuilder(
-            context,
-            currentKeys.keyForIndex(index),
-            _gestureDetector(currentKeys.keyForIndex(index), index),
-            index,
-          ),
-        );
-      },
-    );
   }
 
   int toFutureIndex(int index) {
@@ -120,6 +123,7 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
 
   ReordeableCollectionGestureDetectorBuilder _gestureDetector(GlobalKey key, int index) {
     return (Widget child) => GestureDetector(
+          onTapDown: (_) => setState(() => _disableScrolling = true),
           onPanStart: (details) {
             _updateBounds();
             _overlay = OverlayEntry(
@@ -198,30 +202,38 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
     _targetOffsets[_from] = _initialBounds[_to].center;
     int from = _from;
     _from = null;
+    _overlay.remove();
     await _rearrangeAnimationController.forward(from: 0);
     widget.onReorder(from, _to);
-    _overlay.remove();
     setState(() {
       _currentOffsets = {};
       _to = null;
       _currentOffsets = {};
       _initialBounds = {};
       _targetOffsets = {};
+      _disableScrolling = false;
     });
   }
 
   Widget _draggableChild(int index) {
-    return AnimatedBuilder(
-      animation: _rearrangeAnimationController,
-      builder: (ctx, child) => Transform.translate(
-        offset: _from == null
-            ? (_initialBounds[index].topLeft + _calcTransitionOffset(index))
-            : (_dragOffset + _initialBounds[index].topLeft),
-        child: widget.itemBuilder(
-          context,
-          null,
-          (c) => c,
-          index,
+    return Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(
+        width: _initialBounds[index].width,
+        height: _initialBounds[index].height,
+        child: AnimatedBuilder(
+          animation: _rearrangeAnimationController,
+          builder: (ctx, child) => Transform.translate(
+            offset: _from == null
+                ? (_initialBounds[index].topLeft + _calcTransitionOffset(index))
+                : (_dragOffset + _initialBounds[index].topLeft),
+            child: widget.itemBuilder(
+              context,
+              null,
+              (c) => c,
+              index,
+            ),
+          ),
         ),
       ),
     );
