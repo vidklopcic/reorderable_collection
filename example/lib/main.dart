@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-import 'dart:async';
+import 'dart:math';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:reordeable_collection/reordeable_collection.dart';
 import 'package:gm5_utils/extended_functionality/collections.dart';
 
@@ -15,8 +14,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  Random _random = Random();
   String _platformVersion = 'Unknown';
-  List<String> _sortableItems = List.generate(1000, (index) => 'Item $index');
+  List<String> _sortableItems = List.generate(1000, (index) => '$index');
 
   @override
   void initState() {
@@ -31,10 +31,18 @@ class _MyAppState extends State<MyApp> {
           title: const Text('General reordeable example'),
         ),
         body: ReordeableCollectionController(
-          itemBuilder: (context, key, dragDetector, index) => dragDetector(ListTile(
+          itemBuilder: (context, key, dragDetector, index) => dragDetector(Container(
             key: key,
-            title: Text(
-              _sortableItems[index],
+            padding: EdgeInsets.symmetric(vertical: (50.0 * int.parse(_sortableItems[index])) % 100),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Colors.black45),
+              ),
+            ),
+            child: ListTile(
+              title: Text(
+                _sortableItems[index],
+              ),
             ),
           )),
           collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll) => ListView.builder(

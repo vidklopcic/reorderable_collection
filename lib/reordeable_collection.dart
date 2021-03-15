@@ -11,12 +11,15 @@ typedef ReordeableCollectionBuilder<T> = Widget Function(BuildContext context, K
     ReordeableCollectionItemBuilderWrapper<T> itemBuilder, ScrollController scrollController, bool disableScrolling);
 typedef ReorderableCollectionOnReorder = void Function(int from, int to);
 
+// todo support swap with offset positioning
 enum ReordeableCollectionReorderType { swap, reorder }
+enum ReordeableCollectionPositioningType { offset, center }
 
 class ReordeableCollectionController<T> extends StatefulWidget {
   final ReordeableCollectionBuilder<T> collectionBuilder;
   final ReordeableCollectionItemBuilder<T> itemBuilder;
   final ReordeableCollectionReorderType reorderType;
+  final ReordeableCollectionPositioningType positioningType;
   final Duration duration;
   final Curve curve;
   final Axis limitToAxis;
@@ -31,7 +34,9 @@ class ReordeableCollectionController<T> extends StatefulWidget {
     this.curve = Curves.easeInOutExpo,
     this.reorderType = ReordeableCollectionReorderType.reorder,
     this.limitToAxis = Axis.vertical,
-  }) : super(key: key);
+    this.positioningType = ReordeableCollectionPositioningType.offset,
+  })  : assert(positioningType != ReordeableCollectionPositioningType.offset || limitToAxis != null),
+        super(key: key);
 
   @override
   ReordeableCollectionControllerState createState() => ReordeableCollectionControllerState<T>();
@@ -42,8 +47,7 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   Map<int, Rect> _initialBounds = {};
   Map<int, Offset> _targetOffsets = {};
   Map<int, Offset> _currentOffsets = {};
-  ReordeableCollectionItemBuilderWrapper<T> currentBuilderWrapper;
-  ReordeableCollectionItemBuilderWrapper<T> futureBuilderWrapper;
+  ReordeableCollectionItemBuilderWrapper<T> builderWrapper;
   _ElementKeys currentKeys = _ElementKeys();
   int _from;
   int _to;
@@ -57,8 +61,7 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
 
   @override
   Widget build(BuildContext context) {
-    return widget.collectionBuilder(
-        context, _currentTree, currentBuilderWrapper, _currentScrollController, _disableScrolling);
+    return widget.collectionBuilder(context, _currentTree, builderWrapper, _currentScrollController, _disableScrolling);
   }
 
   Offset _calcTransitionOffset(int index) {
@@ -78,7 +81,7 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
     super.initState();
     _rearrangeAnimationController = AnimationController(vsync: this, duration: widget.duration);
     _rearrangeAnimation = CurvedAnimation(parent: _rearrangeAnimationController, curve: widget.curve);
-    currentBuilderWrapper = (context, index) => AnimatedBuilder(
+    builderWrapper = (context, index) => AnimatedBuilder(
           animation: _rearrangeAnimation,
           builder: (ctx, child) {
             if (_from == index)
@@ -105,7 +108,22 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   }
 
   int toFutureIndex(int index) {
-    int oi = index;
+    if (_from == null || _to == null) return index;
+    if (widget.reorderType == ReordeableCollectionReorderType.swap) {
+      if (index == _from)
+        index = _to;
+      else if (index == _to) index = _from;
+    } else {
+      if (index > _from && index <= _to) {
+        index -= 1;
+      } else if (index < _from && index >= _to) {
+        index += 1;
+      }
+    }
+    return index;
+  }
+
+  int getTargetOffset(int index) {
     if (_from == null || _to == null) return index;
     if (widget.reorderType == ReordeableCollectionReorderType.swap) {
       if (index == _from)
@@ -125,13 +143,13 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
     return (Widget child) => GestureDetector(
           onTapDown: (_) => setState(() => _disableScrolling = true),
           onPanStart: (details) {
+            _from = index;
             _updateBounds();
             _overlay = OverlayEntry(
               builder: (ctx) => Material(type: MaterialType.transparency, child: _draggableChild(index)),
             );
             Overlay.of(context).insert(_overlay);
             setState(() {
-              _from = index;
               _dragOffset = Offset.zero;
             });
           },
@@ -176,10 +194,28 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
     for (int index in _initialBounds.keys) {
       _currentOffsets[index] = _calcTransitionOffset(index);
     }
+    int tDistance = _to - _from;
+
     for (int index in _initialBounds.keys) {
-      int futureIndex = toFutureIndex(index);
-      _targetOffsets[index] = _initialBounds[futureIndex].center;
+      if (widget.positioningType == ReordeableCollectionPositioningType.offset) {
+        Offset offset;
+        if (widget.limitToAxis == Axis.vertical) {
+          offset = Offset(0, _initialBounds[_from].height);
+        } else {
+          offset = Offset(_initialBounds[_from].width, 0);
+        }
+        _targetOffsets[index] = _initialBounds[index].center;
+
+        int distance = index - _from;
+        if (distance.abs() <= tDistance.abs() && distance.sign == tDistance.sign) {
+          _targetOffsets[index] -= offset * distance.sign.toDouble();
+        }
+      } else {
+        int futureIndex = toFutureIndex(index);
+        _targetOffsets[index] = _initialBounds[futureIndex].center;
+      }
     }
+
     _rearrangeAnimationController.forward(from: 0);
   }
 
@@ -199,7 +235,23 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
       _to = _from;
     }
     _currentOffsets[_from] = _dragOffset;
-    _targetOffsets[_from] = _initialBounds[_to].center;
+    if (widget.positioningType == ReordeableCollectionPositioningType.offset) {
+      if (widget.limitToAxis == Axis.vertical) {
+        if (_to < _from) {
+          _targetOffsets[_from] = _initialBounds[_to].topCenter + Offset(0, _initialBounds[_from].height / 2);
+        } else {
+          _targetOffsets[_from] = _initialBounds[_to].bottomCenter - Offset(0, _initialBounds[_from].height / 2);
+        }
+      } else {
+        if (_to < _from) {
+          _targetOffsets[_from] = _initialBounds[_to].centerLeft + Offset(_initialBounds[_from].width / 2, 0);
+        } else {
+          _targetOffsets[_from] = _initialBounds[_to].centerRight - Offset(_initialBounds[_from].width / 2, 0);
+        }
+      }
+    } else {
+      _targetOffsets[_from] = _initialBounds[_to].center;
+    }
     int from = _from;
     _from = null;
     _overlay.remove();
