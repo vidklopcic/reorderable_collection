@@ -318,7 +318,11 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
       _to = _from;
     }
     _currentOffsets[_from] = _dragOffset;
-    _targetOffsets[_from] = _shadowBounds[_from - _shadowIndexOffset].center;
+    int shadowIndex = _from - _shadowIndexOffset;
+    if (shadowIndex <= _shadowBounds?.length ?? 0)
+      _targetOffsets[_from] = _shadowBounds[shadowIndex].center;
+    else
+      _targetOffsets[_from] = _initialBounds[_from].center;
     int from = _from;
     _from = null;
     _overlay.remove();

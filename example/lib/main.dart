@@ -37,17 +37,10 @@ class _MyAppState extends State<MyApp> {
           itemBuilder: (context, key, dragDetector, index) => dragDetector(
             Container(
               key: key,
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.black45),
-                ),
-              ),
-              child: Container(
-                alignment: Alignment.center,
-                color: Colors.black12,
-                child: Text(
-                  _sortableItems[index],
-                ),
+              alignment: Alignment.center,
+              color: Colors.transparent,
+              child: Text(
+                _sortableItems[index],
               ),
             ),
           ),
