@@ -78,7 +78,7 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   ScrollController _scrollController = ScrollController();
   ScrollController _shadowScrollController = ScrollController();
   bool _disableScrolling = false;
-  double _startScrollOffset;
+  double _startScrollOffset = 0;
   Rect _collectionBounds;
 
   AnimationController _rearrangeAnimationController;
@@ -381,16 +381,20 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   }
 
   void _startShadowWidget() {
-    _startScrollOffset = _scrollController.offset;
-    double scrollOffset;
-    if (widget.scrollDirection == Axis.vertical) {
-      scrollOffset = _collectionBounds.top - _initialBounds.values.map((e) => e.top).reduce(math.min);
-    } else {
-      scrollOffset = _collectionBounds.left - _initialBounds.values.map((e) => e.left).reduce(math.min);
+    if (_shadowScrollController.hasClients) {
+      _startScrollOffset = _scrollController.offset;
+      double scrollOffset;
+      if (widget.scrollDirection == Axis.vertical) {
+        scrollOffset = _collectionBounds.top - _initialBounds.values.map((e) => e.top).reduce(math.min);
+      } else {
+        scrollOffset = _collectionBounds.left - _initialBounds.values.map((e) => e.left).reduce(math.min);
+      }
+      if (_shadowScrollController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          _shadowScrollController.jumpTo(scrollOffset);
+        });
+      }
     }
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _shadowScrollController.jumpTo(scrollOffset);
-    });
 
     _shadowIndexOffset = _initialBounds.keys.reduce(math.min);
 

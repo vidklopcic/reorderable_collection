@@ -16,7 +16,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Random _random = Random();
   String _platformVersion = 'Unknown';
-  List<String> _sortableItems = List.generate(1000, (index) => '$index');
+  List<String> _sortableItems = List.generate(20, (index) => '$index');
 
   @override
   void initState() {
@@ -36,9 +36,12 @@ class _MyAppState extends State<MyApp> {
           reorderType: ReordeableCollectionReorderType.reorder,
           itemBuilder: (context, key, dragDetector, index) => dragDetector(
             Container(
+              width: 50,
+              height: 50,
               key: key,
+              margin: const EdgeInsets.all(8),
               alignment: Alignment.center,
-              color: Colors.transparent,
+              color: Colors.black12,
               child: Text(
                 _sortableItems[index],
               ),
@@ -55,18 +58,13 @@ class _MyAppState extends State<MyApp> {
               ],
             ),
           ),
-          collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll, itemCount) =>
-              GridView.builder(
-            physics: disableScroll ? NeverScrollableScrollPhysics() : null,
+          collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll, itemCount) => Wrap(
             key: key,
-            controller: scrollController,
-            itemCount: itemCount,
-            itemBuilder: itemBuilder,
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 15,
-              maxCrossAxisExtent: 200,
-            ),
+            children: _sortableItems
+                .mapIndexed(
+                  (index, item) => itemBuilder(context, index),
+                )
+                .toList(),
           ),
           onReorder: _sortableItems.move,
         ),
