@@ -31,30 +31,49 @@ class _MyAppState extends State<MyApp> {
           title: const Text('General reordeable example'),
         ),
         body: ReordeableCollectionController(
+          limitToAxis: null,
           itemCount: _sortableItems.length,
+          reorderType: ReordeableCollectionReorderType.reorder,
           itemBuilder: (context, key, dragDetector, index) => dragDetector(
             Container(
               key: key,
-              padding: EdgeInsets.symmetric(vertical: (50.0 * int.parse(_sortableItems[index])) % 100),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: Colors.black45),
                 ),
               ),
-              child: ListTile(
-                title: Text(
+              child: Container(
+                alignment: Alignment.center,
+                color: Colors.black12,
+                child: Text(
                   _sortableItems[index],
                 ),
               ),
             ),
           ),
+          dropPlaceholderBuilder: (context, from, to) => Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  spreadRadius: -10,
+                  blurRadius: 15,
+                ),
+              ],
+            ),
+          ),
           collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll, itemCount) =>
-              ListView.builder(
+              GridView.builder(
             physics: disableScroll ? NeverScrollableScrollPhysics() : null,
             key: key,
             controller: scrollController,
             itemCount: itemCount,
             itemBuilder: itemBuilder,
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              crossAxisSpacing: 15,
+              mainAxisSpacing: 15,
+              maxCrossAxisExtent: 200,
+            ),
           ),
           onReorder: _sortableItems.move,
         ),
