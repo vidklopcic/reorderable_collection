@@ -36,7 +36,7 @@ class ReordeableCollection<T> extends StatefulWidget {
   final ReordeableCollectionItemBuilder<T> itemBuilder;
   final ReordeableCollectionReorderType reorderType;
 
-  /// reorder and drop animation duration
+  /// Reorder and drop animation duration. This is also the debounce duration.
   final Duration duration;
 
   /// reorder and drop animation curve
@@ -114,21 +114,18 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
 
   bool get isDragging => _from != null;
 
+  Widget _cachedCollection;
+
   @override
   Widget build(BuildContext context) {
-    final collection = widget.collectionBuilder(
-      context,
-      _collectionKey,
-      builderWrapper,
-      _scrollController,
-      _disableScrolling,
-      widget.itemCount,
-    );
-
+    // use cached collection if dragging to improve performance
+    if (!isDragging) {
+      buildCollection();
+    }
     return Stack(
       children: [
         Positioned.fill(child: _shadowWidget()),
-        collection,
+        _cachedCollection,
       ],
     );
   }
@@ -143,6 +140,12 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     }
     Offset oTarg = oTo - oFrom;
     return Tween(begin: oCurr, end: oTarg).animate(_rearrangeAnimation).value;
+  }
+
+  @override
+  void didUpdateWidget(covariant ReordeableCollection<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    buildCollection();
   }
 
   @override
@@ -180,6 +183,8 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
       if (_startScrollOffset == null) return;
       _shadowScrollController.jumpTo(_scrollController.offset - _startScrollOffset);
     });
+
+    buildCollection();
   }
 
   int toFutureIndex(int index) {
@@ -235,7 +240,10 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
 
   ReordeableCollectionGestureDetectorBuilder _gestureDetector(GlobalKey key, int index) {
     return (Widget child) => GestureDetector(
-          onTapDown: (_) => setState(() => _disableScrolling = true),
+          onTapDown: (_) => setState(() {
+            _disableScrolling = true;
+            buildCollection();
+          }),
           onPanStart: (details) {
             _cursorOffset = details.localPosition;
             _from = index;
@@ -367,6 +375,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
       _initialBounds = {};
       _targetOffsets = {};
       _disableScrolling = false;
+      buildCollection();
     });
   }
 
@@ -448,6 +457,17 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       _updatePositions();
     });
+  }
+
+  void buildCollection() {
+    _cachedCollection = widget.collectionBuilder(
+      context,
+      _collectionKey,
+      builderWrapper,
+      _scrollController,
+      _disableScrolling,
+      widget.itemCount,
+    );
   }
 }
 

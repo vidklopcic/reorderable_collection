@@ -16,7 +16,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Random _random = Random();
   String _platformVersion = 'Unknown';
-  List<String> _sortableItems = List.generate(20, (index) => '$index');
+  List<String> _sortableItems = List.generate(100, (index) => '$index');
 
   @override
   void initState() {
@@ -34,31 +34,32 @@ class _MyAppState extends State<MyApp> {
           limitToAxis: null,
           itemCount: _sortableItems.length,
           reorderType: ReordeableCollectionReorderType.swap,
-          itemBuilder: (context, key, dragDetector, index) => dragDetector(
-            StatefulSample(
-              key: key,
-              value: _sortableItems[index],
-            ),
-          ),
-          dropPlaceholderBuilder: (context, from, to) => Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  spreadRadius: -10,
-                  blurRadius: 15,
+          itemBuilder: (context, key, dragDetector, index) =>
+              dragDetector(
+                StatefulSample(key: key, value: _sortableItems[index]),
+              ),
+          dropPlaceholderBuilder: (context, from, to) =>
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      spreadRadius: -10,
+                      blurRadius: 15,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll, itemCount) => Wrap(
-            key: key,
-            children: _sortableItems
-                .mapIndexed(
-                  (index, item) => itemBuilder(context, index),
-                )
-                .toList(),
-          ),
+              ),
+          collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll, itemCount) {
+            print('here');
+            return SingleChildScrollView(
+              physics: disableScroll ? NeverScrollableScrollPhysics() : null,
+              child: Wrap(
+                key: key,
+                children: _sortableItems.mapIndexed((index, item) => itemBuilder(context, index)).toList(),
+              ),
+            );
+          },
           onReorder: (a, b) {},
         ),
       ),
@@ -83,8 +84,8 @@ class _StatefulSampleState extends State<StatefulSample> {
     return InkWell(
       onTap: () => setState(() {}),
       child: Container(
-        width: 50,
-        height: 50,
+        width: 100,
+        height: 100,
         margin: const EdgeInsets.all(8),
         alignment: Alignment.center,
         color: Colors.black12,
