@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:gm5_utils/gm5_utils.dart';
-import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 
 typedef ReordeableCollectionGestureDetectorBuilder = Widget Function(Widget child);
 typedef ReordeableCollectionItemBuilder<T> = Widget Function(
@@ -21,25 +20,49 @@ typedef ReordeableCollectionBuilder<T> = Widget Function(
 );
 typedef ReorderableCollectionOnReorder = void Function(int from, int to);
 typedef DropPlaceholderBuilder = Widget Function(BuildContext context, int from, int to);
+typedef ShadowItemBuilder = Widget Function(BuildContext context, int index);
 typedef DragPreviewBuilder = Widget Function(BuildContext context, int index, Offset cursorOffset);
 
-// todo support swap with offset positioning
 enum ReordeableCollectionReorderType { swap, reorder }
 
-class ReordeableCollectionController<T> extends StatefulWidget {
+class ReordeableCollection<T> extends StatefulWidget {
+  /// forwarded to collection builder
   final int itemCount;
+
+  /// builds primary collection and "shadow" widget to calculate future offsets
   final ReordeableCollectionBuilder<T> collectionBuilder;
+
+  /// forwarded to collectionBuilder and used to build the preview
   final ReordeableCollectionItemBuilder<T> itemBuilder;
   final ReordeableCollectionReorderType reorderType;
+
+  /// reorder and drop animation duration
   final Duration duration;
+
+  /// reorder and drop animation curve
   final Curve curve;
+
+  /// limit drag to a single axis
   final Axis limitToAxis;
+
+  /// used to calculate scroll offset for the shadow widget
   final Axis scrollDirection;
+
+  /// Any underlying data should be reordered here.
+  /// Keys are reordered internally. Therefore StatefulWidgets will retain their state by default.
   final ReorderableCollectionOnReorder onReorder;
+
+  /// overrides default preview from the itemBuilder
   final DragPreviewBuilder dragPreviewBuilder;
+
+  /// widget marking the potential drop target
   final DropPlaceholderBuilder dropPlaceholderBuilder;
 
-  const ReordeableCollectionController({
+  /// Builds widgets directly behind the visible collection items.
+  /// Can be used to add effects (eg. outline using OverflowBox or background if item is transparent)
+  final ShadowItemBuilder shadowItemBuilder;
+
+  const ReordeableCollection({
     Key key,
     @required this.collectionBuilder,
     @required this.itemBuilder,
@@ -52,14 +75,14 @@ class ReordeableCollectionController<T> extends StatefulWidget {
     this.scrollDirection = Axis.vertical,
     this.dragPreviewBuilder,
     this.dropPlaceholderBuilder,
+    this.shadowItemBuilder,
   }) : super(key: key);
 
   @override
-  ReordeableCollectionControllerState createState() => ReordeableCollectionControllerState<T>();
+  ReordeableCollectionState createState() => ReordeableCollectionState<T>();
 }
 
-class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionController<T>>
-    with SingleTickerProviderStateMixin {
+class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with SingleTickerProviderStateMixin {
   ReordeableCollectionItemBuilderWrapper<T> builderWrapper;
 
   Map<int, Rect> _initialBounds = {};
@@ -88,6 +111,8 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
   List<Widget> _shadowChildren;
 
   List<Rect> _shadowBounds = [];
+
+  bool get isDragging => _from != null;
 
   @override
   Widget build(BuildContext context) {
@@ -327,7 +352,14 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
     _from = null;
     _overlay.remove();
     await _rearrangeAnimationController.forward(from: 0);
-    widget.onReorder(from, _to);
+    if (from != _to) {
+      if (widget.onReorder != null) widget.onReorder(from, _to);
+      if (widget.reorderType == ReordeableCollectionReorderType.swap) {
+        currentKeys.swap(from, _to);
+      } else {
+        currentKeys.move(from, _to);
+      }
+    }
     setState(() {
       _currentOffsets = {};
       _to = null;
@@ -389,11 +421,9 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
       } else {
         scrollOffset = _collectionBounds.left - _initialBounds.values.map((e) => e.left).reduce(math.min);
       }
-      if (_shadowScrollController.hasClients) {
-        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-          _shadowScrollController.jumpTo(scrollOffset);
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        _shadowScrollController.jumpTo(scrollOffset);
+      });
     }
 
     _shadowIndexOffset = _initialBounds.keys.reduce(math.min);
@@ -408,11 +438,16 @@ class ReordeableCollectionControllerState<T> extends State<ReordeableCollectionC
           child: index == _from
               ? widget.dropPlaceholderBuilder != null
                   ? widget.dropPlaceholderBuilder(context, _from, _to)
-                  : null
+                  : widget.shadowItemBuilder != null
+                      ? widget.shadowItemBuilder(context, index)
+                      : null
               : null,
         ),
       );
     }
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _updatePositions();
+    });
   }
 }
 
@@ -434,4 +469,29 @@ class _ElementKeys {
   int indexForKey(GlobalKey key) => _keys[key];
 
   List<GlobalKey> get keys => _keys.keys.toList();
+
+  void swap(int from, int to) {
+    if (from == to) return;
+    final _fk = _indexes[from];
+    final _tk = _indexes[to];
+    _indexes[from] = _tk;
+    _indexes[to] = _fk;
+    _keys[_tk] = from;
+    _keys[_fk] = to;
+  }
+
+  void move(int from, int to) {
+    if (from == to) return;
+    GlobalKey replacedKey = _indexes[to];
+    _indexes[to] = _indexes[from];
+    _keys[_indexes[to]] = to;
+
+    int diff = to - from;
+    for (int i = to - diff.sign; (i - to).abs() <= diff.abs(); i -= diff.sign) {
+      GlobalKey currentKey = replacedKey;
+      replacedKey = _indexes[i];
+      _indexes[i] = currentKey;
+      _keys[currentKey] = i;
+    }
+  }
 }

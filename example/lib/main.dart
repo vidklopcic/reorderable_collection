@@ -30,21 +30,14 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('General reordeable example'),
         ),
-        body: ReordeableCollectionController(
+        body: ReordeableCollection(
           limitToAxis: null,
           itemCount: _sortableItems.length,
-          reorderType: ReordeableCollectionReorderType.reorder,
+          reorderType: ReordeableCollectionReorderType.swap,
           itemBuilder: (context, key, dragDetector, index) => dragDetector(
-            Container(
-              width: 50,
-              height: 50,
+            StatefulSample(
               key: key,
-              margin: const EdgeInsets.all(8),
-              alignment: Alignment.center,
-              color: Colors.black12,
-              child: Text(
-                _sortableItems[index],
-              ),
+              value: _sortableItems[index],
             ),
           ),
           dropPlaceholderBuilder: (context, from, to) => Container(
@@ -66,9 +59,43 @@ class _MyAppState extends State<MyApp> {
                 )
                 .toList(),
           ),
-          onReorder: _sortableItems.move,
+          onReorder: (a, b) {},
         ),
       ),
     );
+  }
+}
+
+class StatefulSample extends StatefulWidget {
+  final String value;
+
+  const StatefulSample({Key key, this.value}) : super(key: key);
+
+  @override
+  _StatefulSampleState createState() => _StatefulSampleState();
+}
+
+class _StatefulSampleState extends State<StatefulSample> {
+  String _value;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => setState(() {}),
+      child: Container(
+        width: 50,
+        height: 50,
+        margin: const EdgeInsets.all(8),
+        alignment: Alignment.center,
+        color: Colors.black12,
+        child: Text(_value),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.value;
   }
 }
