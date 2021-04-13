@@ -65,8 +65,8 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: a148b672e03eb996f4bc9fa03e136361619d5c70
-      url: "git@github.com:vidklopcic/gm5_utils.git"
+      resolved-ref: c76da1e01fd95e09408018e31007870103d00da7
+      url: "https://github.com/vidklopcic/gm5_utils.git"
     source: git
     version: "0.0.1"
   http:
@@ -171,7 +171,7 @@ packages:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.19"
+    version: "0.3.0"
   typed_data:
     dependency: transitive
     description:
@@ -187,5 +187,5 @@ packages:
     source: hosted
     version: "2.1.0"
 sdks:
-  dart: ">=2.12.0-0.0 <3.0.0"
+  dart: ">=2.12.0 <3.0.0"
   flutter: ">=1.20.0"

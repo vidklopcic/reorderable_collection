@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
         body: ReordeableCollection(
           limitToAxis: null,
           itemCount: _sortableItems.length,
-          reorderType: ReordeableCollectionReorderType.swap,
+          reorderType: ReordeableCollectionReorderType.reorder,
           itemBuilder: (context, key, dragDetector, index) =>
               dragDetector(
                 StatefulSample(key: key, value: _sortableItems[index]),

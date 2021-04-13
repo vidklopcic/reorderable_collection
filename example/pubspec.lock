@@ -103,8 +103,8 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "005c794c07b5ddef20b237cffe3ced8859d2d369"
-      url: "git@github.com:vidklopcic/gm5_utils.git"
+      resolved-ref: c76da1e01fd95e09408018e31007870103d00da7
+      url: "https://github.com/vidklopcic/gm5_utils.git"
     source: git
     version: "0.0.1"
   http:
@@ -132,7 +132,7 @@ packages:
       name: intl
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.16.1"
+    version: "0.17.0"
   linked_scroll_controller:
     dependency: transitive
     description:
@@ -181,7 +181,7 @@ packages:
       name: process
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.1.0"
+    version: "4.2.1"
   reordeable_collection:
     dependency: "direct main"
     description:
@@ -242,7 +242,7 @@ packages:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.19"
+    version: "0.3.0"
   typed_data:
     dependency: transitive
     description:
@@ -272,5 +272,5 @@ packages:
     source: hosted
     version: "3.0.0"
 sdks:
-  dart: ">=2.12.0-0.0 <3.0.0"
+  dart: ">=2.12.0 <3.0.0"
   flutter: ">=1.20.0"

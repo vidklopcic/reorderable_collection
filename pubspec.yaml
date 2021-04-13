@@ -12,7 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   gm5_utils:
-    git: git@github.com:vidklopcic/gm5_utils.git
+    git: https://github.com/vidklopcic/gm5_utils.git
   linked_scroll_controller: ^0.1.2
 
 dev_dependencies:
