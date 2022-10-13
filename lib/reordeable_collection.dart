@@ -8,6 +8,7 @@ typedef ReordeableCollectionItemBuilder<T> = Widget Function(
   Key? key,
   ReordeableCollectionGestureDetectorBuilder dragDetector,
   int index,
+  bool dragging,
 );
 typedef ReordeableCollectionItemBuilderWrapper<T> = Widget Function(BuildContext context, int index);
 typedef ReordeableCollectionBuilder<T> = Widget Function(
@@ -69,7 +70,7 @@ class ReordeableCollection<T> extends StatefulWidget {
     required this.onReorder,
     required this.itemCount,
     this.duration = const Duration(milliseconds: 200),
-    this.curve = Curves.easeInOutExpo,
+    this.curve = Curves.easeInOutCubic,
     this.reorderType = ReordeableCollectionReorderType.reorder,
     this.limitToAxis = Axis.vertical,
     this.scrollDirection = Axis.vertical,
@@ -164,6 +165,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
                   currentKeys.keyForIndex(index),
                   _gestureDetector(currentKeys.keyForIndex(index), index),
                   index,
+                  false,
                 ),
               );
             return Transform.translate(
@@ -173,6 +175,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
                 currentKeys.keyForIndex(index),
                 _gestureDetector(currentKeys.keyForIndex(index), index),
                 index,
+                false,
               ),
             );
           },
@@ -397,6 +400,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
                     null,
                     (c) => c,
                     index,
+                    true,
                   ),
           ),
         ),
