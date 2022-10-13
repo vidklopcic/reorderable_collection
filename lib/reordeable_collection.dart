@@ -13,15 +13,15 @@ typedef ReordeableCollectionItemBuilderWrapper<T> = Widget Function(BuildContext
 typedef ReordeableCollectionBuilder<T> = Widget Function(
   BuildContext context,
   Key key,
-  ReordeableCollectionItemBuilderWrapper<T> itemBuilder,
+  ReordeableCollectionItemBuilderWrapper<T>? itemBuilder,
   ScrollController scrollController,
   bool disableScrolling,
   int itemCount,
 );
-typedef ReorderableCollectionOnReorder = void Function(int from, int to);
-typedef DropPlaceholderBuilder = Widget Function(BuildContext context, int from, int to);
-typedef ShadowItemBuilder = Widget Function(BuildContext context, int index);
-typedef DragPreviewBuilder = Widget Function(BuildContext context, int index, Offset cursorOffset);
+typedef ReorderableCollectionOnReorder = void Function(int? from, int? to);
+typedef DropPlaceholderBuilder = Widget Function(BuildContext context, int? from, int? to);
+typedef ShadowItemBuilder = Widget Function(BuildContext context, int? index);
+typedef DragPreviewBuilder = Widget Function(BuildContext context, int? index, Offset? cursorOffset);
 
 enum ReordeableCollectionReorderType { swap, reorder }
 
@@ -102,10 +102,10 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
   ScrollController _shadowScrollController = ScrollController();
   bool _disableScrolling = false;
   double? _startScrollOffset = 0;
-  Rect? _collectionBounds;
+  late Rect _collectionBounds;
 
-  AnimationController? _rearrangeAnimationController;
-  Animation<double>? _rearrangeAnimation;
+  late AnimationController _rearrangeAnimationController;
+  late Animation<double> _rearrangeAnimation;
 
   int? _shadowIndexOffset;
   List<Widget>? _shadowChildren;
@@ -114,7 +114,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
 
   bool get isDragging => _from != null;
 
-  Widget? _cachedCollection;
+  late Widget _cachedCollection;
 
   @override
   Widget build(BuildContext context) {
@@ -125,12 +125,12 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     return Stack(
       children: [
         Positioned.fill(child: _shadowWidget()),
-        if (_cachedCollection != null) _cachedCollection!,
+        _cachedCollection,
       ],
     );
   }
 
-  Offset _calcTransitionOffset(int index) {
+  Offset _calcTransitionOffset(int? index) {
     Offset? oTo = _targetOffsets[index];
     Offset? oFrom = _initialBounds[index]?.center;
     Offset oCurr = _currentOffsets[index] ?? Offset.zero;
@@ -139,7 +139,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
       oFrom = Offset.zero;
     }
     Offset oTarg = oTo - oFrom;
-    return Tween(begin: oCurr, end: oTarg).animate(_rearrangeAnimation!).value;
+    return Tween(begin: oCurr, end: oTarg).animate(_rearrangeAnimation).value;
   }
 
   @override
@@ -152,9 +152,9 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
   void initState() {
     super.initState();
     _rearrangeAnimationController = AnimationController(vsync: this, duration: widget.duration);
-    _rearrangeAnimation = CurvedAnimation(parent: _rearrangeAnimationController!, curve: widget.curve);
+    _rearrangeAnimation = CurvedAnimation(parent: _rearrangeAnimationController, curve: widget.curve);
     builderWrapper = (context, index) => AnimatedBuilder(
-          animation: _rearrangeAnimation!,
+          animation: _rearrangeAnimation,
           builder: (ctx, child) {
             if (_from == index)
               return Transform.translate(
@@ -187,15 +187,15 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     buildCollection();
   }
 
-  int toFutureIndex(int index) {
+  int? toFutureIndex(int? index) {
     if (_from == null || _to == null) return index;
-    if (index == _from) return _to!;
+    if (index == _from) return _to;
     if (widget.reorderType == ReordeableCollectionReorderType.swap) {
       if (index == _from)
-        index = _to!;
-      else if (index == _to) index = _from!;
+        index = _to;
+      else if (index == _to) index = _from;
     } else {
-      if (index > _from! && index <= _to!) {
+      if (index! > _from! && index <= _to!) {
         index -= 1;
       } else if (index < _from! && index >= _to!) {
         index += 1;
@@ -204,16 +204,16 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     return index;
   }
 
-  int fromFutureIndex(int index) {
+  int? fromFutureIndex(int? index) {
     if (_from == null || _to == null) return index;
     if (widget.reorderType == ReordeableCollectionReorderType.swap) {
       if (index == _from)
-        index = _to!;
-      else if (index == _to) index = _from!;
+        index = _to;
+      else if (index == _to) index = _from;
     } else {
       if (index == _to) {
-        index = _from!;
-      } else if (index >= _from! && index < _to!) {
+        index = _from;
+      } else if (index! >= _from! && index < _to!) {
         index += 1;
       } else if (index <= _from! && index > _to!) {
         index -= 1;
@@ -222,14 +222,14 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     return index;
   }
 
-  int getTargetOffset(int index) {
+  int? getTargetOffset(int? index) {
     if (_from == null || _to == null) return index;
     if (widget.reorderType == ReordeableCollectionReorderType.swap) {
       if (index == _from)
-        index = _to!;
-      else if (index == _to) index = _from!;
+        index = _to;
+      else if (index == _to) index = _from;
     } else {
-      if (index > _from! && index <= _to!) {
+      if (index! > _from! && index <= _to!) {
         index -= 1;
       } else if (index < _from! && index >= _to!) {
         index += 1;
@@ -238,7 +238,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     return index;
   }
 
-  ReordeableCollectionGestureDetectorBuilder _gestureDetector(GlobalKey key, int index) {
+  ReordeableCollectionGestureDetectorBuilder _gestureDetector(GlobalKey? key, int index) {
     return (Widget child) => GestureDetector(
           onTapDown: (_) => setState(() {
             _disableScrolling = true;
@@ -251,7 +251,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
             _overlay = OverlayEntry(
               builder: (ctx) => Material(type: MaterialType.transparency, child: _draggableChild(index)),
             );
-            Overlay.of(context)?.insert(_overlay!);
+            Overlay.of(context)!.insert(_overlay!);
 
             _startShadowWidget();
 
@@ -277,8 +277,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
         );
   }
 
-  Rect? _renderBoxToBounds(RenderBox? box) {
-    if (box == null) return null;
+  Rect _renderBoxToBounds(RenderBox box) {
     Offset topLeft = box.localToGlobal(Offset.zero);
     Offset bottomRight = topLeft + box.size.bottomRight(Offset.zero);
     return Rect.fromPoints(topLeft, bottomRight);
@@ -287,7 +286,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
   void _updateHitObject(GlobalKey draggingKey) {
     if (_from == null) return;
     Offset renderCenter = _dragOffset + _initialBounds[_from]!.center;
-    for (int index in _initialBounds.keys) {
+    for (int? index in _initialBounds.keys) {
       if (_initialBounds[index]!.contains(renderCenter)) {
         _setToIndex(index);
         return;
@@ -295,7 +294,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     }
   }
 
-  void _setToIndex(int to) {
+  void _setToIndex(int? to) {
     if (to == _to) return;
     setState(() {
       _to = to;
@@ -307,16 +306,16 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
   }
 
   void _updatePositions() {
-    for (int index in _initialBounds.keys) {
-      _currentOffsets[index] = _calcTransitionOffset(index);
+    for (int? index in _initialBounds.keys) {
+      _currentOffsets[index!] = _calcTransitionOffset(index);
     }
 
-    for (int index in _initialBounds.keys) {
+    for (int? index in _initialBounds.keys) {
       _updateShadowBounds();
-      _targetOffsets[index] = _shadowBounds[index - _shadowIndexOffset!]!.center;
+      _targetOffsets[index!] = _shadowBounds[index - _shadowIndexOffset!]!.center;
     }
 
-    _rearrangeAnimationController!.forward(from: 0);
+    _rearrangeAnimationController.forward(from: 0);
   }
 
   void _updateBounds() {
@@ -326,10 +325,10 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     }
     _collectionBounds = _renderBoxToBounds(renderObject as RenderBox);
 
-    for (GlobalKey key in currentKeys.keys) {
-      RenderObject? renderObject = key.currentContext?.findRenderObject();
+    for (GlobalKey? key in currentKeys.keys) {
+      RenderObject? renderObject = key!.currentContext?.findRenderObject();
       if (renderObject == null || !renderObject.attached) continue;
-      _initialBounds[currentKeys.indexForKey(key)] = _renderBoxToBounds(renderObject as RenderBox)!;
+      _initialBounds[currentKeys.indexForKey(key)!] = _renderBoxToBounds(renderObject as RenderBox);
     }
   }
 
@@ -344,8 +343,8 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
   }
 
   void _endDrag() async {
-    for (int index in _initialBounds.keys) {
-      _currentOffsets[index] = _calcTransitionOffset(index);
+    for (int? index in _initialBounds.keys) {
+      _currentOffsets[index!] = _calcTransitionOffset(index);
     }
     if (_to == null) {
       _to = _from;
@@ -355,17 +354,17 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     if (shadowIndex <= _shadowBounds.length)
       _targetOffsets[_from!] = _shadowBounds[shadowIndex]!.center;
     else
-      _targetOffsets[_from!] = _initialBounds[_from!]!.center;
-    int from = _from!;
+      _targetOffsets[_from!] = _initialBounds[_from]!.center;
+    int? from = _from;
     _from = null;
     _overlay!.remove();
-    await _rearrangeAnimationController!.forward(from: 0);
+    await _rearrangeAnimationController.forward(from: 0);
     if (from != _to) {
-      widget.onReorder(from, _to!);
+      widget.onReorder(from, _to);
       if (widget.reorderType == ReordeableCollectionReorderType.swap) {
-        currentKeys.swap(from, _to!);
+        currentKeys.swap(from, _to);
       } else {
-        currentKeys.move(from, _to!);
+        currentKeys.move(from, _to);
       }
     }
     setState(() {
@@ -386,13 +385,13 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
         width: _initialBounds[index]!.width,
         height: _initialBounds[index]!.height,
         child: AnimatedBuilder(
-          animation: _rearrangeAnimationController!,
+          animation: _rearrangeAnimationController,
           builder: (ctx, child) => Transform.translate(
             offset: _from == null
                 ? (_initialBounds[index]!.topLeft + _calcTransitionOffset(index))
                 : (_dragOffset + _initialBounds[index]!.topLeft),
             child: widget.dragPreviewBuilder != null
-                ? widget.dragPreviewBuilder!(context, _from!, _cursorOffset!)
+                ? widget.dragPreviewBuilder!(context, _from, _cursorOffset)
                 : widget.itemBuilder(
                     context,
                     null,
@@ -411,7 +410,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
       context,
       _shadowCollectionKey,
       (c, i) {
-        int fi = fromFutureIndex(i + _shadowIndexOffset!) - _shadowIndexOffset!;
+        int fi = fromFutureIndex(i + _shadowIndexOffset!)! - _shadowIndexOffset!;
         // print('$i -> $fi');
         return _shadowChildren![fi];
       },
@@ -426,9 +425,9 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
       _startScrollOffset = _scrollController.offset;
       double scrollOffset;
       if (widget.scrollDirection == Axis.vertical) {
-        scrollOffset = _collectionBounds!.top - _initialBounds.values.map((e) => e.top).reduce(math.min);
+        scrollOffset = _collectionBounds.top - _initialBounds.values.map((e) => e.top).reduce(math.min);
       } else {
-        scrollOffset = _collectionBounds!.left - _initialBounds.values.map((e) => e.left).reduce(math.min);
+        scrollOffset = _collectionBounds.left - _initialBounds.values.map((e) => e.left).reduce(math.min);
       }
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         _shadowScrollController.jumpTo(scrollOffset);
@@ -438,7 +437,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     _shadowIndexOffset = _initialBounds.keys.reduce(math.min);
 
     _shadowChildren = [];
-    for (int index in _initialBounds.keys.toList()..sort()) {
+    for (int? index in _initialBounds.keys.toList()..sort()) {
       _shadowChildren!.add(
         SizedBox(
           key: GlobalKey(),
@@ -446,7 +445,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
           height: _initialBounds[index]!.height,
           child: index == _from
               ? widget.dropPlaceholderBuilder != null
-                  ? widget.dropPlaceholderBuilder!(context, _from!, _to!)
+                  ? widget.dropPlaceholderBuilder!(context, _from, _to)
                   : widget.shadowItemBuilder != null
                       ? widget.shadowItemBuilder!(context, index)
                       : null
@@ -463,7 +462,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     _cachedCollection = widget.collectionBuilder(
       context,
       _collectionKey,
-      builderWrapper!,
+      builderWrapper,
       _scrollController,
       _disableScrolling,
       widget.itemCount,
@@ -472,10 +471,10 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
 }
 
 class _ElementKeys {
-  Map<int, GlobalKey> _indexes = {};
-  Map<GlobalKey, int> _keys = {};
+  Map<int?, GlobalKey?> _indexes = {};
+  Map<GlobalKey?, int?> _keys = {};
 
-  GlobalKey keyForIndex(int index) {
+  GlobalKey? keyForIndex(int index) {
     return _indexes.putIfAbsent(
       index,
       () {
@@ -486,30 +485,30 @@ class _ElementKeys {
     );
   }
 
-  int indexForKey(GlobalKey key) => _keys[key]!;
+  int? indexForKey(GlobalKey? key) => _keys[key];
 
-  List<GlobalKey> get keys => _keys.keys.toList();
+  List<GlobalKey?> get keys => _keys.keys.toList();
 
-  void swap(int from, int to) {
+  void swap(int? from, int? to) {
     if (from == to) return;
-    final _fk = _indexes[from]!;
-    final _tk = _indexes[to]!;
+    final _fk = _indexes[from];
+    final _tk = _indexes[to];
     _indexes[from] = _tk;
     _indexes[to] = _fk;
     _keys[_tk] = from;
     _keys[_fk] = to;
   }
 
-  void move(int from, int to) {
+  void move(int? from, int? to) {
     if (from == to) return;
-    GlobalKey replacedKey = _indexes[to]!;
-    _indexes[to] = _indexes[from]!;
-    _keys[_indexes[to]!] = to;
+    GlobalKey? replacedKey = _indexes[to];
+    _indexes[to] = _indexes[from];
+    _keys[_indexes[to]] = to;
 
-    int diff = to - from;
+    int diff = to! - from!;
     for (int i = to - diff.sign; (i - to).abs() <= diff.abs(); i -= diff.sign) {
-      GlobalKey currentKey = replacedKey;
-      replacedKey = _indexes[i]!;
+      GlobalKey? currentKey = replacedKey;
+      replacedKey = _indexes[i];
       _indexes[i] = currentKey;
       _keys[currentKey] = i;
     }
