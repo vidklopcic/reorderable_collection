@@ -13,7 +13,7 @@ typedef ReordeableCollectionItemBuilderWrapper<T> = Widget Function(BuildContext
 typedef ReordeableCollectionBuilder<T> = Widget Function(
   BuildContext context,
   Key key,
-  ReordeableCollectionItemBuilderWrapper<T>? itemBuilder,
+  ReordeableCollectionItemBuilderWrapper<T> itemBuilder,
   ScrollController scrollController,
   bool disableScrolling,
   int itemCount,
@@ -462,7 +462,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     _cachedCollection = widget.collectionBuilder(
       context,
       _collectionKey,
-      builderWrapper,
+      builderWrapper!,
       _scrollController,
       _disableScrolling,
       widget.itemCount,
