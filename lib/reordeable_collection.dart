@@ -18,7 +18,7 @@ typedef ReordeableCollectionBuilder<T> = Widget Function(
   bool disableScrolling,
   int itemCount,
 );
-typedef ReorderableCollectionOnReorder = void Function(int? from, int? to);
+typedef ReorderableCollectionOnReorder = void Function(int from, int to);
 typedef DropPlaceholderBuilder = Widget Function(BuildContext context, int? from, int? to);
 typedef ShadowItemBuilder = Widget Function(BuildContext context, int? index);
 typedef DragPreviewBuilder = Widget Function(BuildContext context, int? index, Offset? cursorOffset);
@@ -360,7 +360,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     _overlay!.remove();
     await _rearrangeAnimationController.forward(from: 0);
     if (from != _to) {
-      widget.onReorder(from, _to);
+      widget.onReorder(from!, _to!);
       if (widget.reorderType == ReordeableCollectionReorderType.swap) {
         currentKeys.swap(from, _to);
       } else {
