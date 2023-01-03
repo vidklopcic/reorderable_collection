@@ -34,7 +34,7 @@ class _MyAppState extends State<MyApp> {
           limitToAxis: null,
           itemCount: _sortableItems.length,
           reorderType: ReordeableCollectionReorderType.reorder,
-          itemBuilder: (context, key, dragDetector, index) =>
+          itemBuilder: (context, key, dragDetector, index, dragging) =>
               dragDetector(
                 StatefulSample(key: key, value: _sortableItems[index]),
               ),
