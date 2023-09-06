@@ -14,8 +14,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Random _random = Random();
-  String _platformVersion = 'Unknown';
   List<String> _sortableItems = List.generate(100, (index) => '$index');
 
   @override
@@ -30,37 +28,54 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('General reordeable example'),
         ),
-        body: ReordeableCollection(
-          limitToAxis: null,
-          itemCount: _sortableItems.length,
-          reorderType: ReordeableCollectionReorderType.reorder,
-          itemBuilder: (context, key, dragDetector, index, dragging) =>
-              dragDetector(
-                StatefulSample(key: key, value: _sortableItems[index]),
+        body: DefaultTabController(
+          length: 2,
+          child: Column(
+            children: [
+              TabBar(
+                tabs: [
+                  Tab(text: 'Grid'),
+                  Tab(text: 'Two columns'),
+                ],
               ),
-          dropPlaceholderBuilder: (context, from, to) =>
-              Container(
-                decoration: BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      spreadRadius: -10,
-                      blurRadius: 15,
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    ReordeableCollection(
+                      limitToAxis: null,
+                      itemCount: _sortableItems.length,
+                      reorderType: ReordeableCollectionReorderType.reorder,
+                      itemBuilder: (context, key, dragDetector, index, dragging) => dragDetector(
+                        StatefulSample(key: key, value: _sortableItems[index]),
+                      ),
+                      dropPlaceholderBuilder: (context, from, to) => Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              spreadRadius: -10,
+                              blurRadius: 15,
+                            ),
+                          ],
+                        ),
+                      ),
+                      collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll, itemCount) {
+                        print('here');
+                        return SingleChildScrollView(
+                          physics: disableScroll ? NeverScrollableScrollPhysics() : null,
+                          child: Wrap(
+                            key: key,
+                            children: _sortableItems.mapIndexed((index, item) => itemBuilder(context, index)).toList(),
+                          ),
+                        );
+                      },
+                      onReorder: (a, b) {},
                     ),
                   ],
                 ),
               ),
-          collectionBuilder: (context, key, itemBuilder, scrollController, disableScroll, itemCount) {
-            print('here');
-            return SingleChildScrollView(
-              physics: disableScroll ? NeverScrollableScrollPhysics() : null,
-              child: Wrap(
-                key: key,
-                children: _sortableItems.mapIndexed((index, item) => itemBuilder(context, index)).toList(),
-              ),
-            );
-          },
-          onReorder: (a, b) {},
+            ],
+          ),
         ),
       ),
     );
