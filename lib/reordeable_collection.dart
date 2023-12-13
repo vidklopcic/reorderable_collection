@@ -44,7 +44,7 @@ class ReordeableCollection<T> extends StatefulWidget {
   final Curve curve;
 
   /// limit drag to a single axis
-  final Axis limitToAxis;
+  final Axis? limitToAxis;
 
   /// used to calculate scroll offset for the shadow widget
   final Axis scrollDirection;
@@ -254,7 +254,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
             _overlay = OverlayEntry(
               builder: (ctx) => Material(type: MaterialType.transparency, child: _draggableChild(index)),
             );
-            Overlay.of(context)!.insert(_overlay!);
+            Overlay.of(context).insert(_overlay!);
 
             _startShadowWidget();
 
@@ -331,7 +331,7 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     for (GlobalKey? key in currentKeys.keys) {
       RenderObject? renderObject = key!.currentContext?.findRenderObject();
       if (renderObject == null || !renderObject.attached) continue;
-      _initialBounds[currentKeys.indexForKey(key)!] = _renderBoxToBounds(renderObject as RenderBox);
+      _initialBounds[currentKeys.indexForKey(key)] = _renderBoxToBounds(renderObject as RenderBox);
     }
   }
 
@@ -365,9 +365,9 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
     if (from != _to) {
       widget.onReorder(from!, _to!);
       if (widget.reorderType == ReordeableCollectionReorderType.swap) {
-        currentKeys.swap(from, _to);
+        currentKeys.swap(from, _to!);
       } else {
-        currentKeys.move(from, _to);
+        currentKeys.move(from, _to!);
       }
     }
     setState(() {
@@ -475,10 +475,10 @@ class ReordeableCollectionState<T> extends State<ReordeableCollection<T>> with S
 }
 
 class _ElementKeys {
-  Map<int?, GlobalKey?> _indexes = {};
-  Map<GlobalKey?, int?> _keys = {};
+  Map<int, GlobalKey> _indexes = {};
+  Map<GlobalKey, int> _keys = {};
 
-  GlobalKey? keyForIndex(int index) {
+  GlobalKey keyForIndex(int index) {
     return _indexes.putIfAbsent(
       index,
       () {
@@ -489,30 +489,30 @@ class _ElementKeys {
     );
   }
 
-  int? indexForKey(GlobalKey? key) => _keys[key];
+  int indexForKey(GlobalKey? key) => _keys[key]!;
 
-  List<GlobalKey?> get keys => _keys.keys.toList();
+  List<GlobalKey> get keys => _keys.keys.toList();
 
-  void swap(int? from, int? to) {
+  void swap(int from, int to) {
     if (from == to) return;
-    final _fk = _indexes[from];
-    final _tk = _indexes[to];
+    final _fk = _indexes[from]!;
+    final _tk = _indexes[to]!;
     _indexes[from] = _tk;
     _indexes[to] = _fk;
     _keys[_tk] = from;
     _keys[_fk] = to;
   }
 
-  void move(int? from, int? to) {
+  void move(int from, int to) {
     if (from == to) return;
-    GlobalKey? replacedKey = _indexes[to];
-    _indexes[to] = _indexes[from];
-    _keys[_indexes[to]] = to;
+    GlobalKey replacedKey = _indexes[to]!;
+    _indexes[to] = _indexes[from]!;
+    _keys[_indexes[to]!] = to;
 
-    int diff = to! - from!;
+    int diff = to - from;
     for (int i = to - diff.sign; (i - to).abs() <= diff.abs(); i -= diff.sign) {
-      GlobalKey? currentKey = replacedKey;
-      replacedKey = _indexes[i];
+      GlobalKey currentKey = replacedKey;
+      replacedKey = _indexes[i]!;
       _indexes[i] = currentKey;
       _keys[currentKey] = i;
     }

@@ -4,7 +4,7 @@ version: 0.0.1
 homepage: /
 
 environment:
-  sdk: ">=2.17.6 <3.0.0"
+  sdk: '>=3.1.4 <4.0.0'
   flutter: ">=1.20.0"
 
 dependencies:
@@ -12,7 +12,6 @@ dependencies:
     sdk: flutter
   gm5_utils:
     git: https://github.com/vidklopcic/gm5_utils.git
-  linked_scroll_controller: ^0.1.2
 
 dev_dependencies:
   flutter_test:

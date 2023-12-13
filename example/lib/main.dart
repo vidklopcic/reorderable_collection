@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:reordeable_collection/reordeable_collection.dart';
 import 'package:gm5_utils/extended_functionality/collections.dart';
@@ -85,14 +83,14 @@ class _MyAppState extends State<MyApp> {
 class StatefulSample extends StatefulWidget {
   final String value;
 
-  const StatefulSample({Key key, this.value}) : super(key: key);
+  const StatefulSample({Key? key, required this.value}) : super(key: key);
 
   @override
   _StatefulSampleState createState() => _StatefulSampleState();
 }
 
 class _StatefulSampleState extends State<StatefulSample> {
-  String _value;
+  String? _value;
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +102,7 @@ class _StatefulSampleState extends State<StatefulSample> {
         margin: const EdgeInsets.all(8),
         alignment: Alignment.center,
         color: Colors.black12,
-        child: Text(_value),
+        child: Text(_value ?? ''),
       ),
     );
   }
